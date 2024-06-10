@@ -101,6 +101,15 @@
 # plt.show()
 ##-- code with 3-4 % acc and < loss
 
+
+
+
+
+
+
+
+
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -118,7 +127,7 @@ validation_dir = "D:/PixelPen-Model/dataset/validation"
 # Data Preprocessing
 train_datagen = ImageDataGenerator(
     rescale=1./255,
-    rotation_range=20,
+    rotation_range=30,
     width_shift_range=0.2,
     height_shift_range=0.2,
     shear_range=0.2,
@@ -132,14 +141,14 @@ validation_datagen = ImageDataGenerator(rescale=1./255)
 train_generator = train_datagen.flow_from_directory(
     train_dir,
     target_size=(150, 150),
-    batch_size=32,
+    batch_size=64,
     class_mode='categorical'
 )
 
 validation_generator = validation_datagen.flow_from_directory(
     validation_dir,
     target_size=(150, 150),
-    batch_size=32,
+    batch_size=64,
     class_mode='categorical'
 )
 
@@ -160,6 +169,8 @@ model = Sequential([
     GlobalAveragePooling2D(),
     Dense(512, activation='relu'),
     Dropout(0.5),
+    Dense(256, activation='relu'),
+    Dropout(0.3),
     Dense(num_classes, activation='softmax')
 ])
 
