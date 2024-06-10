@@ -102,6 +102,7 @@
 ##-- code with 3-4 % acc and < loss
 
 
+
 import os
 import cv2
 import pytesseract
@@ -121,7 +122,19 @@ char_dict = {char: idx for idx, char in enumerate(char_list)}
 num_classes = len(char_list)
 
 # Configure Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Update with your Tesseract-OCR installation path
+pytesseract.pytesseract.tesseract_cmd = r"D:\pytesseract\tesseract.exe"
+
+# Disable OneDNN custom operations
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+# Set memory growth for GPU
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
 def preprocess_image(image_path):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -129,6 +142,9 @@ def preprocess_image(image_path):
     img = img / 255.0
     img = np.expand_dims(img, axis=-1)
     return img
+
+def clean_text(text):
+    return ''.join([char for char in text if char in char_dict])
 
 def encode_label(label):
     return [char_dict[char] for char in label]
@@ -146,6 +162,7 @@ def load_data(directory):
             if file.endswith('.png'):
                 image_path = os.path.join(subdir, file)
                 label = extract_text_from_image(image_path)
+                label = clean_text(label)  # Clean the extracted text
                 
                 image = preprocess_image(image_path)
                 encoded_label = encode_label(label)
@@ -155,8 +172,12 @@ def load_data(directory):
     return np.array(images), labels
 
 # Load training and validation data
+print("Loading training data...")
 X_train, y_train = load_data(os.path.join(DATA_PATH, 'train'))
+print("Training data loaded.")
+print("Loading validation data...")
 X_val, y_val = load_data(os.path.join(DATA_PATH, 'validation'))
+print("Validation data loaded.")
 
 # Pad labels to the max length
 max_label_length = max(max(len(label) for label in y_train), max(len(label) for label in y_val))
@@ -225,6 +246,6 @@ model.fit(
     x=[X_train, y_train_padded, input_length_train, label_length_train], 
     y=output_dummy_train,
     validation_data=([X_val, y_val_padded, input_length_val, label_length_val], output_dummy_val),
-    batch_size=32,
+    batch_size=16,  # Reduced batch size
     epochs=10
 )
