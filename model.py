@@ -122,7 +122,7 @@ char_dict = {char: idx for idx, char in enumerate(char_list)}
 num_classes = len(char_list)
 
 # Configure Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r"D:\pytesseract\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"D:/pytesseract/tesseract.exe"
 
 # Disable OneDNN custom operations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -161,23 +161,27 @@ def load_data(directory):
         for file in files:
             if file.endswith('.png'):
                 image_path = os.path.join(subdir, file)
-                label = extract_text_from_image(image_path)
-                label = clean_text(label)  # Clean the extracted text
-                
-                image = preprocess_image(image_path)
-                encoded_label = encode_label(label)
-                
-                images.append(image)
-                labels.append(encoded_label)
+                print(f"Processing {image_path}...")  # Debugging print statement
+                try:
+                    label = extract_text_from_image(image_path)
+                    label = clean_text(label)  # Clean the extracted text
+                    
+                    image = preprocess_image(image_path)
+                    encoded_label = encode_label(label)
+                    
+                    images.append(image)
+                    labels.append(encoded_label)
+                except Exception as e:
+                    print(f"Error processing {image_path}: {e}")
     return np.array(images), labels
 
 # Load training and validation data
 print("Loading training data...")
 X_train, y_train = load_data(os.path.join(DATA_PATH, 'train'))
-print("Training data loaded.")
+print("Training data loaded. Total samples:", len(X_train))
 print("Loading validation data...")
 X_val, y_val = load_data(os.path.join(DATA_PATH, 'validation'))
-print("Validation data loaded.")
+print("Validation data loaded. Total samples:", len(X_val))
 
 # Pad labels to the max length
 max_label_length = max(max(len(label) for label in y_train), max(len(label) for label in y_val))
@@ -231,10 +235,10 @@ model = models.Model(inputs=[model.input, labels, input_length, label_length], o
 model.compile(optimizer='adam', loss={'ctc': lambda y_true, y_pred: y_pred})
 
 # Prepare training data
-input_length_train = np.ones((len(X_train), 1)) * (IMG_SIZE[0] // 2 - 2)
+input_length_train = np.ones((len(X_train), 1)) * (IMG_SIZE[1] // 4)
 label_length_train = np.array([len(label) for label in y_train])
 
-input_length_val = np.ones((len(X_val), 1)) * (IMG_SIZE[0] // 2 - 2)
+input_length_val = np.ones((len(X_val), 1)) * (IMG_SIZE[1] // 4)
 label_length_val = np.array([len(label) for label in y_val])
 
 # Dummy zero array for the loss function
