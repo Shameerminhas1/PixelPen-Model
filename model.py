@@ -103,153 +103,359 @@
 
 
 
+# import os
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# from tensorflow.keras.models import Model
+# from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+# from tensorflow.keras.applications import VGG16
+# from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+
+# # Set up directory paths
+# train_dir = "D:/PixelPen-Model/dataset/train"
+# validation_dir = "D:/PixelPen-Model/dataset/validation"
+
+# # Data Preprocessing
+# train_datagen = ImageDataGenerator(
+#     rescale=1./255,
+#     rotation_range=20,
+#     width_shift_range=0.2,
+#     height_shift_range=0.2,
+#     shear_range=0.2,
+#     zoom_range=0.2,
+#     horizontal_flip=True,
+#     fill_mode='nearest'
+# )
+
+# validation_datagen = ImageDataGenerator(rescale=1./255)
+
+# train_generator = train_datagen.flow_from_directory(
+#     train_dir,
+#     target_size=(150, 150),
+#     batch_size=32,
+#     class_mode='categorical'
+# )
+
+# validation_generator = validation_datagen.flow_from_directory(
+#     validation_dir,
+#     target_size=(150, 150),
+#     batch_size=32,
+#     class_mode='categorical'
+# )
+
+# # Confirm the number of classes
+# num_classes = len(train_generator.class_indices)
+# print(f"Number of classes in training data: {num_classes}")
+# print(f"Number of classes in validation data: {len(validation_generator.class_indices)}")
+
+# # Load the VGG16 model, excluding the top dense layers
+# base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+
+# # Freeze the base model
+# for layer in base_model.layers:
+#     layer.trainable = False
+
+# # Add custom top layers
+# x = base_model.output
+# x = GlobalAveragePooling2D()(x)
+# x = Dense(512, activation='relu')(x)
+# x = Dropout(0.5)(x)
+# predictions = Dense(num_classes, activation='softmax')(x)
+
+# # Define the new model
+# model = Model(inputs=base_model.input, outputs=predictions)
+
+# model.compile(
+#     loss='categorical_crossentropy',
+#     optimizer=Adam(learning_rate=0.0001),  # Fine-tuning with a lower learning rate
+#     metrics=['accuracy']
+# )
+
+# model.summary()
+
+# # Set Up Callbacks
+# callbacks = [
+#     EarlyStopping(patience=10, restore_best_weights=True),
+#     ModelCheckpoint('best_model.keras', save_best_only=True)
+# ]
+
+# # Initial Training
+# history = model.fit(
+#     train_generator,
+#     epochs=50,
+#     validation_data=validation_generator,
+#     callbacks=callbacks
+# )
+
+# # Evaluate the initial model
+# val_loss, val_accuracy = model.evaluate(validation_generator)
+# print(f"Initial validation loss: {val_loss}")
+# print(f"Initial validation accuracy: {val_accuracy}")
+
+# # Plot Initial Training History
+# plt.plot(history.history['accuracy'], label='train accuracy')
+# plt.plot(history.history['val_accuracy'], label='val accuracy')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.legend()
+# plt.show()
+
+# plt.plot(history.history['loss'], label='train loss')
+# plt.plot(history.history['val_loss'], label='val loss')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.show()
+
+# # Unfreeze some layers of the base model for fine-tuning
+# for layer in base_model.layers[-4:]:  # Unfreezing last 4 layers as an example
+#     layer.trainable = True
+
+# # Recompile the model with a lower learning rate for fine-tuning
+# model.compile(
+#     loss='categorical_crossentropy',
+#     optimizer=Adam(learning_rate=1e-5),
+#     metrics=['accuracy']
+# )
+
+# # Fine-tune the model
+# fine_tune_history = model.fit(
+#     train_generator,
+#     epochs=20,
+#     validation_data=validation_generator,
+#     callbacks=callbacks
+# )
+
+# # Evaluate the fine-tuned model
+# val_loss, val_accuracy = model.evaluate(validation_generator)
+# print(f"Validation loss after fine-tuning: {val_loss}")
+# print(f"Validation accuracy after fine-tuning: {val_accuracy}")
+
+# # Plot Fine-Tuning History
+# plt.plot(fine_tune_history.history['accuracy'], label='train accuracy')
+# plt.plot(fine_tune_history.history['val_accuracy'], label='val accuracy')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.legend()
+# plt.show()
+
+# plt.plot(fine_tune_history.history['loss'], label='train loss')
+# plt.plot(fine_tune_history.history['val_loss'], label='val loss')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.show()
+
+
+
 import os
-import cv2
-import pytesseract
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers, models, backend as K
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-# Path to the dataset
-DATA_PATH = 'D:/PixelPen-Model/dataset'
+# Set up directory paths
+train_dir = "D:/PixelPen-Model/dataset/train"
+validation_dir = "D:/PixelPen-Model/dataset/validation"
 
-# Image size
-IMG_SIZE = (128, 32)
+# Data Preprocessing
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
 
-# Character list for encoding labels
-char_list = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.;'- "
-char_dict = {char: idx for idx, char in enumerate(char_list)}
-num_classes = len(char_list)
+validation_datagen = ImageDataGenerator(rescale=1./255)
 
-# Configure Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r"D:/pytesseract/tesseract.exe"
+train_generator = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=(150, 150),
+    batch_size=32,
+    class_mode='categorical'
+)
 
-# Disable OneDNN custom operations
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+validation_generator = validation_datagen.flow_from_directory(
+    validation_dir,
+    target_size=(150, 150),
+    batch_size=32,
+    class_mode='categorical'
+)
 
-# Set memory growth for GPU
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
+# Confirm the number of classes
+num_classes = len(train_generator.class_indices)
+print(f"Number of classes in training data: {num_classes}")
+print(f"Number of classes in validation data: {len(validation_generator.class_indices)}")
 
-def preprocess_image(image_path):
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    img = cv2.resize(img, IMG_SIZE)
-    img = img / 255.0
-    img = np.expand_dims(img, axis=-1)
-    return img
+# Load the VGG16 model, excluding the top dense layers
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
 
-def clean_text(text):
-    return ''.join([char for char in text if char in char_dict])
+# Freeze the base model
+for layer in base_model.layers:
+    layer.trainable = False
 
-def encode_label(label):
-    return [char_dict[char] for char in label]
+# Add custom top layers
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dense(512, activation='relu')(x)
+x = Dropout(0.5)(x)
+predictions = Dense(num_classes, activation='softmax')(x)
 
-def extract_text_from_image(image_path):
-    img = cv2.imread(image_path)
-    text = pytesseract.image_to_string(img)
-    return text.strip()
+# Define the new model
+model = Model(inputs=base_model.input, outputs=predictions)
 
-def load_data(directory):
-    images = []
-    labels = []
-    for subdir, _, files in os.walk(directory):
-        for file in files:
-            if file.endswith('.png'):
-                image_path = os.path.join(subdir, file)
-                print(f"Processing {image_path}...")  # Debugging print statement
-                try:
-                    label = extract_text_from_image(image_path)
-                    label = clean_text(label)  # Clean the extracted text
-                    
-                    image = preprocess_image(image_path)
-                    encoded_label = encode_label(label)
-                    
-                    images.append(image)
-                    labels.append(encoded_label)
-                except Exception as e:
-                    print(f"Error processing {image_path}: {e}")
-    return np.array(images), labels
+model.compile(
+    loss='categorical_crossentropy',
+    optimizer=Adam(learning_rate=0.0001),  # Fine-tuning with a lower learning rate
+    metrics=['accuracy']
+)
 
-# Load training and validation data
-print("Loading training data...")
-X_train, y_train = load_data(os.path.join(DATA_PATH, 'train'))
-print("Training data loaded. Total samples:", len(X_train))
-print("Loading validation data...")
-X_val, y_val = load_data(os.path.join(DATA_PATH, 'validation'))
-print("Validation data loaded. Total samples:", len(X_val))
-
-# Pad labels to the max length
-max_label_length = max(max(len(label) for label in y_train), max(len(label) for label in y_val))
-y_train_padded = tf.keras.preprocessing.sequence.pad_sequences(y_train, maxlen=max_label_length, padding='post', value=len(char_list))
-y_val_padded = tf.keras.preprocessing.sequence.pad_sequences(y_val, maxlen=max_label_length, padding='post', value=len(char_list))
-
-# Define the model
-def build_crnn(input_shape, num_classes):
-    input_data = layers.Input(name='input', shape=input_shape, dtype='float32')
-
-    # CNN layers
-    cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_data)
-    cnn = layers.MaxPooling2D(pool_size=(2, 2))(cnn)
-    cnn = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.MaxPooling2D(pool_size=(2, 2))(cnn)
-
-    # Reshape for RNN
-    rnn_input = layers.Reshape(target_shape=(-1, cnn.shape[2] * cnn.shape[3]))(cnn)
-
-    # RNN layers
-    rnn = layers.Bidirectional(layers.LSTM(128, return_sequences=True))(rnn_input)
-    rnn = layers.Bidirectional(layers.LSTM(128, return_sequences=True))(rnn)
-
-    # Dense layer with softmax
-    y_pred = layers.Dense(num_classes, activation='softmax')(rnn)
-
-    model = models.Model(inputs=input_data, outputs=y_pred)
-    return model
-
-# Input shape
-input_shape = (IMG_SIZE[1], IMG_SIZE[0], 1)  # (height, width, channels)
-
-# Build and compile model
-model = build_crnn(input_shape, num_classes)
 model.summary()
 
-# CTC loss function
-def ctc_lambda_func(args):
-    y_pred, labels, input_length, label_length = args
-    return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
+# Set Up Callbacks
+callbacks = [
+    EarlyStopping(patience=10, restore_best_weights=True),
+    ModelCheckpoint('best_model.keras', save_best_only=True)
+]
 
-# Define the model with CTC loss
-labels = layers.Input(name='the_labels', shape=[max_label_length], dtype='float32')
-input_length = layers.Input(name='input_length', shape=[1], dtype='int64')
-label_length = layers.Input(name='label_length', shape=[1], dtype='int64')
-
-y_pred = model.output
-
-ctc_loss = layers.Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
-model = models.Model(inputs=[model.input, labels, input_length, label_length], outputs=ctc_loss)
-model.compile(optimizer='adam', loss={'ctc': lambda y_true, y_pred: y_pred})
-
-# Prepare training data
-input_length_train = np.ones((len(X_train), 1)) * (IMG_SIZE[1] // 4)
-label_length_train = np.array([len(label) for label in y_train])
-
-input_length_val = np.ones((len(X_val), 1)) * (IMG_SIZE[1] // 4)
-label_length_val = np.array([len(label) for label in y_val])
-
-# Dummy zero array for the loss function
-output_dummy_train = np.zeros(len(X_train))
-output_dummy_val = np.zeros(len(X_val))
-
-# Train the model
-model.fit(
-    x=[X_train, y_train_padded, input_length_train, label_length_train], 
-    y=output_dummy_train,
-    validation_data=([X_val, y_val_padded, input_length_val, label_length_val], output_dummy_val),
-    batch_size=16,  # Reduced batch size
-    epochs=10
+# Train the Model
+history = model.fit(
+    train_generator,
+    epochs=50,
+    validation_data=validation_generator,
+    callbacks=callbacks
 )
+
+# Evaluate the Model
+val_loss, val_accuracy = model.evaluate(validation_generator)
+print(f"Validation loss: {val_loss}")
+print(f"Validation accuracy: {val_accuracy}")
+
+# Plot Training History
+plt.plot(history.history['accuracy'], label='train accuracy')
+plt.plot(history.history['val_accuracy'], label='val accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+plt.plot(history.history['loss'], label='train loss')
+plt.plot(history.history['val_loss'], label='val loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+
+
+
+import os
+import cv2
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Reshape, Bidirectional, LSTM
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
+# Function to load images from a folder
+def load_images_from_folder(folder):
+    images = []
+    labels = []
+    for subdir in os.listdir(folder):
+        subfolder = os.path.join(folder, subdir)
+        if os.path.isdir(subfolder):
+            for filename in os.listdir(subfolder):
+                img_path = os.path.join(subfolder, filename)
+                if img_path.endswith(".png"):
+                    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+                    img = cv2.resize(img, (128, 32))
+                    images.append(img)
+                    labels.append(subdir)
+    return images, labels
+
+# Function to preprocess data
+def preprocess_data(train_folder, val_folder):
+    train_images, train_labels = load_images_from_folder(train_folder)
+    val_images, val_labels = load_images_from_folder(val_folder)
+    
+    train_images = np.array(train_images).reshape(-1, 32, 128, 1) / 255.0
+    val_images = np.array(val_images).reshape(-1, 32, 128, 1) / 255.0
+    
+    le = LabelEncoder()
+    train_labels = le.fit_transform(train_labels)
+    val_labels = le.transform(val_labels)
+    
+    return train_images, to_categorical(train_labels), val_images, to_categorical(val_labels), le.classes_
+
+# Paths to train and validation folders
+train_folder = 'D:/PixelPen-Model/dataset/train'
+val_folder = 'D:/PixelPen-Model/dataset/validation'
+
+# Preprocess the data
+X_train, y_train, X_val, y_val, classes = preprocess_data(train_folder, val_folder)
+
+# Function to create CNN model
+def create_cnn_model(input_shape, num_classes):
+    model = Sequential([
+        Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape),
+        MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(64, kernel_size=(3, 3), activation='relu'),
+        MaxPooling2D(pool_size=(2, 2)),
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(num_classes, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# Input shape and number of classes
+input_shape = (32, 128, 1)
+num_classes = len(classes)
+
+# Create, summarize, and train CNN model
+cnn_model = create_cnn_model(input_shape, num_classes)
+cnn_model.summary()
+cnn_model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_size=32)
+cnn_model.save('cnn_model.h5')
+
+# Flatten the data for KNN
+X_train_flat = X_train.reshape(X_train.shape[0], -1)
+X_val_flat = X_val.reshape(X_val.shape[0], -1)
+
+# Create, train, and evaluate KNN model
+knn_model = KNeighborsClassifier(n_neighbors=3)
+knn_model.fit(X_train_flat, y_train.argmax(axis=1))
+y_pred = knn_model.predict(X_val_flat)
+print(f"KNN Accuracy: {accuracy_score(y_val.argmax(axis=1), y_pred)}")
+
+# Function to create RNN model
+def create_rnn_model(input_shape, num_classes):
+    model = Sequential([
+        Reshape(target_shape=(32, 128), input_shape=input_shape),
+        Bidirectional(LSTM(128, return_sequences=True)),
+        Bidirectional(LSTM(128)),
+        Dense(num_classes, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# Create, summarize, and train RNN model
+rnn_model = create_rnn_model(input_shape, num_classes)
+rnn_model.summary()
+rnn_model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_size=32)
+rnn_model.save('rnn_model.h5')
