@@ -248,113 +248,113 @@
 # plt.legend()
 # plt.show()
 
+#######################################################################################33
 
+# import os
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# from tensorflow.keras.models import Model
+# from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+# from tensorflow.keras.applications import VGG16
+# from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+# # Set up directory paths
+# train_dir = "D:/PixelPen-Model/dataset/train"
+# validation_dir = "D:/PixelPen-Model/dataset/validation"
 
-# Set up directory paths
-train_dir = "D:/PixelPen-Model/dataset/train"
-validation_dir = "D:/PixelPen-Model/dataset/validation"
+# # Data Preprocessing
+# train_datagen = ImageDataGenerator(
+#     rescale=1./255,
+#     rotation_range=20,
+#     width_shift_range=0.2,
+#     height_shift_range=0.2,
+#     shear_range=0.2,
+#     zoom_range=0.2,
+#     horizontal_flip=True,
+#     fill_mode='nearest'
+# )
 
-# Data Preprocessing
-train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
-    fill_mode='nearest'
-)
+# validation_datagen = ImageDataGenerator(rescale=1./255)
 
-validation_datagen = ImageDataGenerator(rescale=1./255)
+# train_generator = train_datagen.flow_from_directory(
+#     train_dir,
+#     target_size=(150, 150),
+#     batch_size=32,
+#     class_mode='categorical'
+# )
 
-train_generator = train_datagen.flow_from_directory(
-    train_dir,
-    target_size=(150, 150),
-    batch_size=32,
-    class_mode='categorical'
-)
+# validation_generator = validation_datagen.flow_from_directory(
+#     validation_dir,
+#     target_size=(150, 150),
+#     batch_size=32,
+#     class_mode='categorical'
+# )
 
-validation_generator = validation_datagen.flow_from_directory(
-    validation_dir,
-    target_size=(150, 150),
-    batch_size=32,
-    class_mode='categorical'
-)
+# # Confirm the number of classes
+# num_classes = len(train_generator.class_indices)
+# print(f"Number of classes in training data: {num_classes}")
+# print(f"Number of classes in validation data: {len(validation_generator.class_indices)}")
 
-# Confirm the number of classes
-num_classes = len(train_generator.class_indices)
-print(f"Number of classes in training data: {num_classes}")
-print(f"Number of classes in validation data: {len(validation_generator.class_indices)}")
+# # Load the VGG16 model, excluding the top dense layers
+# base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
 
-# Load the VGG16 model, excluding the top dense layers
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+# # Freeze the base model
+# for layer in base_model.layers:
+#     layer.trainable = False
 
-# Freeze the base model
-for layer in base_model.layers:
-    layer.trainable = False
+# # Add custom top layers
+# x = base_model.output
+# x = GlobalAveragePooling2D()(x)
+# x = Dense(512, activation='relu')(x)
+# x = Dropout(0.5)(x)
+# predictions = Dense(num_classes, activation='softmax')(x)
 
-# Add custom top layers
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-x = Dense(512, activation='relu')(x)
-x = Dropout(0.5)(x)
-predictions = Dense(num_classes, activation='softmax')(x)
+# # Define the new model
+# model = Model(inputs=base_model.input, outputs=predictions)
 
-# Define the new model
-model = Model(inputs=base_model.input, outputs=predictions)
+# model.compile(
+#     loss='categorical_crossentropy',
+#     optimizer=Adam(learning_rate=0.0001),  # Fine-tuning with a lower learning rate
+#     metrics=['accuracy']
+# )
 
-model.compile(
-    loss='categorical_crossentropy',
-    optimizer=Adam(learning_rate=0.0001),  # Fine-tuning with a lower learning rate
-    metrics=['accuracy']
-)
+# model.summary()
 
-model.summary()
+# # Set Up Callbacks
+# callbacks = [
+#     EarlyStopping(patience=10, restore_best_weights=True),
+#     ModelCheckpoint('best_model.keras', save_best_only=True)
+# ]
 
-# Set Up Callbacks
-callbacks = [
-    EarlyStopping(patience=10, restore_best_weights=True),
-    ModelCheckpoint('best_model.keras', save_best_only=True)
-]
+# # Train the Model
+# history = model.fit(
+#     train_generator,
+#     epochs=50,
+#     validation_data=validation_generator,
+#     callbacks=callbacks
+# )
 
-# Train the Model
-history = model.fit(
-    train_generator,
-    epochs=50,
-    validation_data=validation_generator,
-    callbacks=callbacks
-)
+# # Evaluate the Model
+# val_loss, val_accuracy = model.evaluate(validation_generator)
+# print(f"Validation loss: {val_loss}")
+# print(f"Validation accuracy: {val_accuracy}")
 
-# Evaluate the Model
-val_loss, val_accuracy = model.evaluate(validation_generator)
-print(f"Validation loss: {val_loss}")
-print(f"Validation accuracy: {val_accuracy}")
+# # Plot Training History
+# plt.plot(history.history['accuracy'], label='train accuracy')
+# plt.plot(history.history['val_accuracy'], label='val accuracy')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.legend()
+# plt.show()
 
-# Plot Training History
-plt.plot(history.history['accuracy'], label='train accuracy')
-plt.plot(history.history['val_accuracy'], label='val accuracy')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.legend()
-plt.show()
-
-plt.plot(history.history['loss'], label='train loss')
-plt.plot(history.history['val_loss'], label='val loss')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.show()
+# plt.plot(history.history['loss'], label='train loss')
+# plt.plot(history.history['val_loss'], label='val loss')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.show()
 
 
 
@@ -364,8 +364,8 @@ import cv2
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+import tensorflow as tensorflow
 from tensorflow.keras.utils import to_categorical
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Reshape, Bidirectional, LSTM
 from sklearn.neighbors import KNeighborsClassifier
